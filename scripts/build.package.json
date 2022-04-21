@@ -1,0 +1,15 @@
+{
+  "name": "@opensumi/ripgrep-prebuilt",
+  "version": "WILL_REPLACE_BY_generatePreBuilt",
+  "description": "prebuilt ripgrep binary",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:opensumi/ripgrep.git"
+  },
+  "files": ["build/"],
+  "author": "",
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}
