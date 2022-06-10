@@ -26,7 +26,8 @@ async function main() {
   );
 
   const downloadTargetDir = path.join(PKG_DIR, "build");
-  await downloadGithub(RG_VERSION, downloadTargetDir);
+  const cacheDownloadDir = path.join(PKG_DIR, "cache");
+  await downloadGithub(RG_VERSION, downloadTargetDir, cacheDownloadDir);
 }
 
 main();

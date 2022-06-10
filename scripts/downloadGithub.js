@@ -86,7 +86,6 @@ function download(_url, dest, opts) {
       .get(mergedOpts, (response) => {
         console.log("statusCode: " + response.statusCode);
         if (response.statusCode === 302) {
-          console.log("Following redirect to: " + response.headers.location);
           return download(response.headers.location, dest, opts).then(
             resolve,
             reject
@@ -108,30 +107,52 @@ function download(_url, dest, opts) {
   });
 }
 const fsExists = util.promisify(fs.exists);
-function untar(zipPath, destinationDir) {
-  return new Promise((resolve, reject) => {
-    const unzipProc = child_process.spawn(
-      "tar",
-      ["zxvf", zipPath, "-C", destinationDir],
-      { stdio: "inherit" }
-    );
-    unzipProc.on("error", (err) => {
-      reject(err);
-    });
-    unzipProc.on("close", (code) => {
-      console.log(`tar zxvf exited with ${code}`);
-      if (code !== 0) {
-        reject(new Error(`tar zxvf exited with ${code}`));
-        return;
-      }
 
-      resolve();
-    });
+function unzip(zipPath, destinationDir) {
+  return new Promise((resolve, reject) => {
+    if (zipPath.endsWith(".tar.gz")) {
+      const unzipProc = child_process.spawn(
+        "tar",
+        ["zxvf", zipPath, "-C", destinationDir],
+        { stdio: "inherit" }
+      );
+      unzipProc.on("error", (err) => {
+        reject(err);
+      });
+      unzipProc.on("close", (code) => {
+        console.log(`tar zxvf exited with ${code}`);
+        if (code !== 0) {
+          reject(new Error(`tar zxvf exited with ${code}`));
+          return;
+        }
+
+        resolve();
+      });
+    } else if (zipPath.endsWith(".zip")) {
+      const unzipProc = child_process.spawn(
+        "unzip",
+        [zipPath, "-d", destinationDir],
+        { stdio: "inherit" }
+      );
+      unzipProc.on("error", (err) => {
+        reject(err);
+      });
+      unzipProc.on("close", (code) => {
+        console.log(`unzip exited with ${code}`);
+        if (code !== 0) {
+          reject(new Error(`unzip exited with ${code}`));
+          return;
+        }
+        resolve();
+      });
+    } else {
+      reject(new Error(`Unknown archive type: ${zipPath}`));
+    }
   });
 }
 
 async function unzipRipgrep(zipPath, destinationDir) {
-  await untar(zipPath, destinationDir);
+  await unzip(zipPath, destinationDir);
 
   const expectedName = path.join(destinationDir, "rg");
   if (await fsExists(expectedName)) {
@@ -153,10 +174,11 @@ async function unzipRipgrep(zipPath, destinationDir) {
   );
 }
 
-async function downloadGithub(version, assetDownloadDir) {
+async function downloadGithub(version, assetDownloadDir, cacheDownloadDir) {
   console.log(`Finding release for ${version}`);
   const API = `https://api.github.com/repos/microsoft/ripgrep-prebuilt/releases/tags/${version}`;
   fs.mkdirSync(assetDownloadDir, { recursive: true });
+  fs.mkdirSync(cacheDownloadDir, { recursive: true });
 
   const release = await get(API, downloadOpts);
   let jsonRelease;
@@ -171,7 +193,7 @@ async function downloadGithub(version, assetDownloadDir) {
   }
 
   for await (const asset of jsonRelease.assets) {
-    const downloadFileDest = `${assetDownloadDir}/${asset.name}`;
+    const downloadFileDest = `${cacheDownloadDir}/${asset.name}`;
 
     console.log(`Downloading from ${asset.url}`);
     console.log(`Downloading to ${downloadFileDest}`);
@@ -204,15 +226,8 @@ async function downloadGithub(version, assetDownloadDir) {
     } catch (e) {
       console.log("Deleting invalid download");
 
-      try {
-        await fs.promises.unlink(downloadFileDest);
-      } catch (e) {}
-
       throw e;
     }
-    try {
-      await fs.promises.unlink(downloadFileDest);
-    } catch (e) {}
   }
 }
 
