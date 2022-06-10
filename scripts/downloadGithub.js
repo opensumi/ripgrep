@@ -112,16 +112,16 @@ function untar(zipPath, destinationDir) {
   return new Promise((resolve, reject) => {
     const unzipProc = child_process.spawn(
       "tar",
-      ["xvf", zipPath, "-C", destinationDir],
+      ["zxvf", zipPath, "-C", destinationDir],
       { stdio: "inherit" }
     );
     unzipProc.on("error", (err) => {
       reject(err);
     });
     unzipProc.on("close", (code) => {
-      console.log(`tar xvf exited with ${code}`);
+      console.log(`tar zxvf exited with ${code}`);
       if (code !== 0) {
-        reject(new Error(`tar xvf exited with ${code}`));
+        reject(new Error(`tar zxvf exited with ${code}`));
         return;
       }
 
