@@ -17,8 +17,8 @@ const downloadOpts = {
   },
 };
 
-if (process.env.token) {
-  downloadOpts.headers.authorization = `token ${process.env.token}`;
+if (process.env.GITHUB_TOKEN) {
+  downloadOpts.headers.authorization = `token ${process.env.GITHUB_TOKEN}`;
 }
 
 function get(_url, opts) {

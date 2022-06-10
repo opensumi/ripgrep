@@ -1,0 +1,51 @@
+name: Publish prebuilt
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "A valid ref, eg: v2.14, main"
+        required: true
+        default: 'main'
+
+jobs:
+ publish-prebuilt:
+    name: Publish prebuilt
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+
+    steps:
+      # 判断用户是否有写权限
+      - name: "Check if user has write access"
+        uses: "lannonbr/repo-permission-check-action@2.0.0"
+        with:
+          permission: "write"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Checkout 到
+      - uses: actions/checkout@v2
+        if: success()
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies & Publish
+        run: |
+          yarn --ignore-scripts
+          node ./scripts/generatePreBuiltPkg.js
+
+          cd prebuilt
+          npm publish --access public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
