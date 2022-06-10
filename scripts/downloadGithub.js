@@ -9,8 +9,6 @@ const URL = url.URL;
 const child_process = require("child_process");
 const proxy_from_env = require("proxy-from-env");
 
-const USE_REVERSE_PROXY = true;
-
 const downloadOpts = {
   headers: {
     "user-agent": "@opensumi/ripgrep",
@@ -63,9 +61,6 @@ function isGithubUrl(_url) {
 }
 
 function download(_url, dest, opts) {
-  if (USE_REVERSE_PROXY) {
-    _url = `https://gh.artin.li/${_url}`;
-  }
   const proxy = proxy_from_env.getProxyForUrl(url.parse(_url));
   if (proxy !== "") {
     opts = {
